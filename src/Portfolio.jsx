@@ -2,6 +2,8 @@ import { useState } from "react";
 import ProjectsView from "./ProjectsView";
 import OrbitImages from "./OrbitImages";
 import SplashCursor from "./SplashCursor";
+import Threads from "./Threads";
+import BorderGlow from "./BorderGlow";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
@@ -20,7 +22,12 @@ const css = `
     --sidebar-peek: 46px;
   }
 
-  html, body { height: 100%; overflow: hidden; }
+  html, body { height: 100%; overflow: hidden; cursor: none; }
+
+  #root, .app,
+  a, button, [role="button"], input, textarea, select {
+    cursor: none;
+  }
 
   .app {
     font-family: 'DM Sans', sans-serif;
@@ -31,18 +38,49 @@ const css = `
     overflow: hidden;
   }
 
+  .threads-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .navbar-glow {
+    width: var(--sidebar);
+    height: calc(100vh - 28px);
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 500;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+  }
+
+  .navbar-glow,
+  .navbar-glow * {
+    cursor: auto !important;
+  }
+
+  .navbar-glow a,
+  .navbar-glow button {
+    cursor: pointer !important;
+  }
+
+  .navbar-glow .border-glow-inner {
+    height: 100%;
+    overflow: visible;
+    border-radius: inherit;
+  }
+
   .sidebar {
     width: var(--sidebar);
-    position: fixed; top:14px; left:14px; bottom:14px;
+    height: 100%;
     display: flex; flex-direction: column;
     padding: 2.2rem 1.25rem;
-    border: 1px solid var(--border);
+    border: none;
     border-radius: 20px;
-    background: rgba(24, 23, 26, 0.92);
-    backdrop-filter: blur(6px);
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
-    z-index: 500;
-    transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s, border-color .3s;
+    background: transparent;
+    box-shadow: none;
+    transition: background .3s, border-color .3s;
   }
 
   .sidebar-toggle {
@@ -147,7 +185,7 @@ const css = `
     transition: margin-left .3s cubic-bezier(.4,0,.2,1);
   }
 
-  .app.nav-collapsed .sidebar {
+  .app.nav-collapsed .navbar-glow {
     transform: translateX(calc(-1 * (var(--sidebar) - var(--sidebar-peek))));
   }
 
@@ -227,7 +265,7 @@ const css = `
 
   .about-body {
     font-size: .88rem; font-weight: 300; line-height: 1.85;
-    color: var(--muted); max-width: 420px;
+    color: var(--muted); max-width: 560px;
   }
 
   .about-body p + p { margin-top: .7rem; }
@@ -263,6 +301,7 @@ const css = `
   }
 
   .page-sub { font-size: .75rem; font-weight: 300; letter-spacing: .1em; color: var(--muted); margin-bottom: 3rem; }
+  .skills-sub { margin-bottom: 1.25rem; }
 
   .projects {
     display: grid;
@@ -379,12 +418,15 @@ const css = `
   .exp-pts li::before { content: '-'; position: absolute; left: 0; color: var(--accent); font-size: .7rem; }
 
   @media (max-width: 800px) {
-    .sidebar {
+    .navbar-glow {
       top: 0;
       left: 0;
-      bottom: 0;
+      height: 100vh;
       border-radius: 0;
-      border-left: none;
+    }
+
+    .sidebar {
+      border-radius: 0;
       box-shadow: none;
     }
 
@@ -397,7 +439,7 @@ const css = `
       margin-left: var(--sidebar);
     }
 
-    .app.nav-collapsed .sidebar {
+    .app.nav-collapsed .navbar-glow {
       transform: none;
     }
 
@@ -413,7 +455,7 @@ const css = `
   }
 `;
 
-const NAV = ["HOME", "WORKS", "SKILLS", "EXPERIENCE"];
+const NAV = ["HOME", "EXPERIENCE", "PROJECTS", "SKILLS"];
 
 const PROJECTS = [
   {
@@ -441,10 +483,10 @@ const PROJECTS = [
 const SKILLS = [
   { label: "Languages", items: ["C", "Java", "Python", "JavaScript", "TypeScript", "SQL", "HTML", "CSS", "Bash", "VHDL", "Verilog"] },
   { label: "Frameworks", items: ["React", "TailwindCSS", "Node.js", "Express.js", "Flask", "FastAPI"] },
-  { label: "ML / Data", items: ["NumPy", "Pandas", "Matplotlib", "Scikit-Learn", "TensorFlow", "PyTorch", "NLTK", "BeautifulSoup"] },
-  { label: "Dev Tools", items: ["Git", "GitHub", "Docker", "Linux", "Jira", "Jupyter", "Vivado"] },
-  { label: "Engineering", items: ["MATLAB", "Excel", "Tableau", "AutoCAD", "SolidWorks", "JUnit", "Pytest"] },
-  { label: "Cloud & DB", items: ["AWS (EB, S3)", "PostgreSQL", "SQLite"] },
+  { label: "Libraries", items: ["NumPy", "Pandas", "Matplotlib", "Scikit-Learn", "TensorFlow", "PyTorch", "NLTK", "BeautifulSoup"] },
+  { label: "Developer Tools & Platforms", items: ["Git", "GitHub", "Docker", "Linux", "Jira", "Jupyter", "Vivado", "Vivado HLS","Xilinx SDK"] },
+  { label: "Engineering & Analysis Tools", items: ["MATLAB", "Excel", "Tableau", "AutoCAD", "SolidWorks", "JUnit", "Pytest"] },
+  { label: "Cloud & Databases", items: ["AWS (EB, S3)", "PostgreSQL", "SQLite"] },
 ];
 
 const skillImageModules = import.meta.glob("./Skill Images/*.{png,jpg,jpeg,webp,svg}", {
@@ -463,8 +505,8 @@ export default function Portfolio() {
   return (
     <>
       <SplashCursor
-        SPLAT_FORCE={2200}
-        SPLAT_RADIUS={0.12}
+        SPLAT_FORCE={1500}
+        SPLAT_RADIUS={0.08}
         COLOR_UPDATE_SPEED={3}
         DENSITY_DISSIPATION={1.9}
         VELOCITY_DISSIPATION={1.1}
@@ -475,41 +517,65 @@ export default function Portfolio() {
           { r: 0.22, g: 0.2, b: 0.2 },
         ]}
       />
+      <div className="threads-bg" aria-hidden="true">
+        <Threads
+          color={[0.50, 0.12, 0.2]}
+          color2={[0.42, 0.48, 0.56]}
+          amplitude={5}
+          distance={1}
+          speed={0.5}
+          enableMouseInteraction={false}
+        />
+      </div>
       <style>{css}</style>
       <div className={`app${sidebarCollapsed ? " nav-collapsed" : ""}`}>
-        <aside className="sidebar">
-          <button
-            type="button"
-            className="sidebar-toggle"
-            onClick={() => setSidebarCollapsed((v) => !v)}
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={sidebarCollapsed ? "Expand" : "Collapse"}
-          >
-            <span>{sidebarCollapsed ? ">" : "<"}</span>
-          </button>
-          <div className="logo">
-            H.S.<span>Portfolio</span>
-          </div>
-          <nav className="nav">
-            {NAV.map((n) => (
-              <button key={n} className={`nav-btn${page === n ? " active" : ""}`} onClick={() => setPage(n)}>
-                {n}
-              </button>
-            ))}
-          </nav>
-          <div className="socials">
-            <a href="https://linkedin.com/in/hemanthsundaresan" target="_blank" rel="noreferrer" className="soc" title="LinkedIn">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" /><circle cx="4" cy="4" r="2" /></svg>
-            </a>
-            <a href="https://github.com/Hemu-unk" target="_blank" rel="noreferrer" className="soc" title="GitHub">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" /></svg>
-            </a>
-            <a href="mailto:s.hemanthsundar@gmail.com" className="soc" title="Email">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="16" height="16"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 7l10 7 10-7" /></svg>
-            </a>
-          </div>
-          <p className="copy">&copy; 2025 Hemanth Sundaresan</p>
-        </aside>
+        <BorderGlow
+          className="navbar-glow"
+          edgeSensitivity={0}
+          glowColor="348 56 46"
+          backgroundColor="rgba(24, 23, 26, 0.92)"
+          borderRadius={20}
+          glowRadius={28}
+          glowIntensity={1.6}
+          coneSpread={18}
+          animated={false}
+          colors={["#8b1a2e", "#b52240", "#7a7672"]}
+          fillOpacity={0.28}
+        >
+          <aside className="sidebar">
+            <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand" : "Collapse"}
+            >
+              <span>{sidebarCollapsed ? ">" : "<"}</span>
+            </button>
+            <div className="logo">
+              H.S.<span>Portfolio</span>
+            </div>
+            <nav className="nav">
+              {NAV.map((n) => (
+                <button key={n} className={`nav-btn${page === n ? " active" : ""}`} onClick={() => setPage(n)}>
+                  {n}
+                </button>
+              ))}
+            </nav>
+            <div className="socials">
+              <a href="https://linkedin.com/in/hemanthsundaresan" target="_blank" rel="noreferrer" className="soc" title="LinkedIn">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" /><circle cx="4" cy="4" r="2" /></svg>
+              </a>
+              <a href="https://github.com/Hemu-unk" target="_blank" rel="noreferrer" className="soc" title="GitHub">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" /></svg>
+              </a>
+              <a href="mailto:s.hemanthsundar@gmail.com" className="soc" title="Email">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="16" height="16"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 7l10 7 10-7" /></svg>
+              </a>
+            </div>
+            <p className="copy">&copy; 2025 Hemanth Sundaresan</p>
+          </aside>
+        </BorderGlow>
 
         <main className="main">
           <div className={`page${page === "HOME" ? " active" : ""}`}>
@@ -521,11 +587,11 @@ export default function Portfolio() {
                     <br />
                     <em>Sundaresan</em>
                   </h1>
-                  <p className="home-role">Computer Engineer · ML Developer</p>
+                  <p className="home-role">Computer Engineer · Data Developer</p>
                 </div>
                 <div className="home-contact">
-                  <div>Guelph, ON - University of Guelph</div>
-                  <div>BEng Computer Engineering - 2027</div>
+                  <div>University of Guelph - Guelph, ON</div>
+                  <div>B.Eng. Computer Engineering - 2027</div>
                   <div style={{ marginTop: ".5rem" }}>
                     <a href="mailto:s.hemanthsundar@gmail.com">s.hemanthsundar@gmail.com</a>
                   </div>
@@ -536,9 +602,10 @@ export default function Portfolio() {
               <div className="home-about">
                 <p className="section-eyebrow">About Me</p>
                 <div className="about-body">
-                  <p>I'm a Computer Engineering student at the University of Guelph focused on full-stack development and machine learning. I build production-level systems - from adaptive learning platforms to disease simulations - backed by real ML pipelines.</p>
-                  <p>Currently working as an AI Model Trainer at Outlier AI, evaluating and refining technical outputs across engineering domains.</p>
-                  <p>Open-source contributor to NLTK. I'm drawn to problems at the intersection of data science and systems design.</p>
+                  <p>I'm a Computer Engineering student at the University of Guelph focused on data science, machine learning, and system design. I enjoy analyzing data to uncover patterns and building systems that use those insights to solve real problems.</p>
+                  <p>I've worked on projects ranging from data analysis models to full stack applications with integrated machine learning, including an agent based infectious disease simulation where I modeled outbreak dynamics and used machine learning to predict infection trends. This experience strengthened my interest in building data driven and scalable systems.</p>
+                  <p>Currently working as an AI Model Trainer at Outlier AI, evaluating and improving technical outputs across engineering and data focused tasks.</p>
+                  <p>Open source contributor to NLTK. I'm particularly interested in problems at the intersection of data science, machine learning, and scalable systems.</p>
                 </div>
               </div>
 
@@ -551,14 +618,14 @@ export default function Portfolio() {
             </div>
           </div>
 
-          <div className={`page${page === "WORKS" ? " active" : ""}`}>
+          <div className={`page${page === "PROJECTS" ? " active" : ""}`}>
             <ProjectsView />
           </div>
 
           <div className={`page skills-page${page === "SKILLS" ? " active" : ""}`}>
             <div className="inner">
               <h2 className="page-heading">Skills</h2>
-              <p className="page-sub">Technologies and tools</p>
+              <p className="page-sub skills-sub">Technologies and tools</p>
               <div className="skills-layout">
                 <div className="skills-left">
                   <div className="skills-grid">
@@ -615,9 +682,9 @@ export default function Portfolio() {
                 <div className="exp-item">
                   <div className="exp-role">Bachelor of Engineering - Computer Engineering</div>
                   <div className="exp-company">University of Guelph</div>
-                  <div className="exp-date">Expected April 2027 · Guelph, ON</div>
+                  <div className="exp-date">April 2027 · Guelph, ON</div>
                   <ul className="exp-pts">
-                    <li>Relevant coursework: Data Structures, OOP, Electric Circuits, Operating Systems, Embedded Reconfigurable Systems, Computer Organization, Software Architecture, Prob & Stats.</li>
+                    <li>Comprehensive program focused on the integration of hardware and software systems, with a strong foundation in programming, circuit design, embedded systems, and computer architecture. Developed problem solving and teamwork skills through hands on projects and design courses, preparing for roles in software development, hardware engineering, and related fields.</li>
                   </ul>
                 </div>
               </div>

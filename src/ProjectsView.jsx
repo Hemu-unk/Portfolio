@@ -29,7 +29,8 @@ const projectsCSS = `
     justify-content:space-between;
     padding:3rem 2.8rem;
     border-right:1px solid rgba(255,255,255,0.07);
-    background:#18171a;
+    background:rgba(24,23,26,.66);
+    backdrop-filter:blur(2px);
     position:relative;
     z-index:2;
     overflow:hidden;
