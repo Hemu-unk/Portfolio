@@ -610,10 +610,10 @@ export default function Portfolio() {
               </div>
 
               <div className="home-footer">
-                <div className="stat"><div className="stat-num">4</div><div className="stat-label">Projects shipped</div></div>
-                <div className="stat"><div className="stat-num">5+</div><div className="stat-label">ML models built</div></div>
+                <div className="stat"><div className="stat-num">4</div><div className="stat-label">Projects Built</div></div>
+                <div className="stat"><div className="stat-num">5+</div><div className="stat-label">ML Models Used</div></div>
                 <div className="stat"><div className="stat-num">11</div><div className="stat-label">Languages & frameworks</div></div>
-                <div className="stat"><div className="stat-num">INF</div><div className="stat-label">Bugs squashed</div></div>
+                <div className="stat"><div className="stat-num">∞</div><div className="stat-label">Bugs squashed</div></div>
               </div>
             </div>
           </div>

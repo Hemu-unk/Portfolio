@@ -1,4 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import brightsum1 from "./Project Pics/BrightSUM 1.png";
+import brightsum2 from "./Project Pics/BrightSUM 2.png";
+import brightsum3 from "./Project Pics/BrightSUM 3.png";
+import f11 from "./Project Pics/F1 1.png";
+import f12 from "./Project Pics/F1 2.png";
+import abs1 from "./Project Pics/ABS 1.png";
+import abs2 from "./Project Pics/ABS 2.png";
+import simd1 from "./Project Pics/SIMD 1.png";
+import simd2 from "./Project Pics/SIMD 2.png";
+import simd3 from "./Project Pics/SIMD 3.png";
+import simd4 from "./Project Pics/SIMD 4.png";
 
 const projectsCSS = `
   /* -- PROJECTS SCROLL -- */
@@ -78,7 +89,7 @@ const projectsCSS = `
     --hover-boost:.5;
     width:100%;
     max-width:380px;
-    aspect-ratio:16/10;
+    aspect-ratio:var(--preview-aspect-ratio, 16/10);
     border-radius:12px;
     overflow:hidden;
     position:relative;
@@ -99,12 +110,13 @@ const projectsCSS = `
   .proj-img {
     position:absolute; inset:0;
     width:100%; height:100%;
-    object-fit:cover; object-position:center top;
+    object-fit:contain; object-position:center;
     display:block;
     transition:transform .6s ease;
-    transform:scale(1.04);
+    transform:scale(1);
+    background:transparent;
   }
-  .proj-preview-card:hover .proj-img { transform:scale(1.1); }
+  .proj-preview-card:hover .proj-img { transform:scale(1); }
 
   .proj-ph {
     position:absolute; inset:0;
@@ -258,7 +270,7 @@ export const projects = [
   {
     id: "1",
     title: "BRIGHTSUM",
-    image: null,
+    image: [brightsum1, brightsum2, brightsum3],
     github: "https://github.com/Hemu-unk",
     demo: null,
     techs: ["Python", "Flask", "React", "SQLite", "Scikit-Learn", "JWT"],
@@ -270,7 +282,7 @@ export const projects = [
   {
     id: "2",
     title: "F1 PERFORMANCE ANALYSIS",
-    image: null,
+    image: [f11, f12],
     github: "https://github.com/Hemu-unk",
     demo: null,
     techs: ["Python", "Pandas", "NumPy", "Scikit-Learn", "SQL", "Matplotlib", "Jupyter"],
@@ -282,7 +294,7 @@ export const projects = [
   {
     id: "3",
     title: "DISEASE SIMULATION",
-    image: null,
+    image: [abs1, abs2],
     github: "https://github.com/Hemu-unk",
     demo: null,
     techs: ["Python", "Flask", "Scikit-Learn", "NumPy", "AWS EB", "Amazon S3"],
@@ -293,35 +305,57 @@ export const projects = [
   },
   {
     id: "4",
-    title: "NLTK CONTRIBUTIONS",
-    image: null,
+    title: "SIMD HARDWARE ACCELERATOR",
+    image: [simd1, simd2, simd3, simd4],
     github: "https://github.com/Hemu-unk",
     demo: null,
-    techs: ["Python", "NLTK", "NLP"],
-    duration: "Ongoing",
-    roles: "Open Source · NLP Engineering",
+    techs: ["VHDL", "Vivado HLS", "ModelSim", "NEXYS-A7 FPGA", "ZedBoard Zynq-7000", "Xilinx SDK", "AXI4-Lite"],
+    duration: "3 weeks",
+    type: "Academic Project",
+    roles: "Digital Design · Verification · Embedded Co-Design",
     summary:
-      "Fixed PCFG CNF conversion to preserve rule probabilities, removed redundant productions, corrected nonterminal symbols, resolved CLI flag conflicts, and improved tokenization for multi-period abbreviations.",
+      "Designed a SIMD FPGA accelerator to execute four parallel long-division operations with modular datapaths and concurrent execution. Verified correctness with ModelSim waveforms and compared VHDL, HLS, and SDK implementations for performance and resource utilization. Built AXI4-Lite registers and C control routines to pack operands, trigger execution, and read results on NEXYS-A7 and ZedBoard platforms.",
   },
 ];
 
 const isVideo = (src) => src && /\.(mp4|webm|mov)$/i.test(src);
 
 function PreviewCard({ image, title, cardStyle }) {
-  return (
-    <div className="proj-preview-card" style={cardStyle}>
-      <div className="card-chrome">
-        <div className="chrome-dot" />
-        <div className="chrome-dot" />
-        <div className="chrome-dot" />
-      </div>
+  const mediaItems = Array.isArray(image) ? image.filter(Boolean) : image ? [image] : [];
+  const [activeMediaIdx, setActiveMediaIdx] = useState(0);
+  const [mediaAspectRatio, setMediaAspectRatio] = useState("16 / 10");
 
-      {image ? (
-        isVideo(image) ? (
+  useEffect(() => {
+    setActiveMediaIdx(0);
+    setMediaAspectRatio("16 / 10");
+  }, [image]);
+
+  useEffect(() => {
+    if (mediaItems.length <= 1) return undefined;
+
+    const interval = setInterval(() => {
+      setActiveMediaIdx((prev) => (prev + 1) % mediaItems.length);
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [mediaItems.length]);
+
+  const currentMedia = mediaItems[activeMediaIdx];
+  const previewStyle = { ...cardStyle, "--preview-aspect-ratio": mediaAspectRatio };
+
+  return (
+    <div className="proj-preview-card" style={previewStyle}>
+      {currentMedia ? (
+        isVideo(currentMedia) ? (
           <video
             className="proj-img"
-            style={{ top: "22px", height: "calc(100% - 22px)" }}
-            src={image}
+            src={currentMedia}
+            onLoadedMetadata={(e) => {
+              const { videoWidth, videoHeight } = e.currentTarget;
+              if (videoWidth > 0 && videoHeight > 0) {
+                setMediaAspectRatio(`${videoWidth} / ${videoHeight}`);
+              }
+            }}
             autoPlay
             muted
             loop
@@ -330,9 +364,14 @@ function PreviewCard({ image, title, cardStyle }) {
         ) : (
           <img
             className="proj-img"
-            style={{ top: "22px", height: "calc(100% - 22px)" }}
-            src={image}
-            alt={title}
+            src={currentMedia}
+            onLoad={(e) => {
+              const { naturalWidth, naturalHeight } = e.currentTarget;
+              if (naturalWidth > 0 && naturalHeight > 0) {
+                setMediaAspectRatio(`${naturalWidth} / ${naturalHeight}`);
+              }
+            }}
+            alt={`${title} preview ${activeMediaIdx + 1}`}
           />
         )
       ) : (
@@ -491,7 +530,7 @@ export default function ProjectsView() {
                 </div>
                 <div>
                   <div className="proj-meta-key">Type</div>
-                  <div className="proj-meta-val">Personal Project</div>
+                  <div className="proj-meta-val">{p.type || "Personal Project"}</div>
                 </div>
               </div>
 
